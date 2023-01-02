@@ -12,8 +12,6 @@ app.get('/', (req,res) => {
     res.send("server of Task Manager")
 })
 
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.k8emzbd.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 async function run() {
@@ -38,13 +36,28 @@ async function run() {
             const result = await tasks.deleteOne(query);
             res.send(result);
         })
+
         app.put('/tasks/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
-
+            const comment = req.body;
+            const headers = req.headers;
+            const {commentbtn, completebtn} = headers;
+            const {commentText} = comment;
             const getTask = await tasks.findOne(query);
             const {complete} = getTask;
-            const options = { upsert: true };
+            if(commentbtn == true || commentText !== undefined){
+                const option = {upsert: true};
+                const updatecomment = {
+                    $set: {
+                        comment : commentText,
+                    }
+                }
+                const result = await tasks.updateOne(query, updatecomment, option);
+                res.send(result)
+            }
+            if(completebtn ==true || completebtn !== undefined) {
+                const options = { upsert: true };
 
             const updateDoc = {
                 $set: {
@@ -53,6 +66,7 @@ async function run() {
             };
             const result = await tasks.updateOne(query, updateDoc, options);
             res.send(result);
+            }
 
         })
         
